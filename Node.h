@@ -2,11 +2,11 @@
 #define NODE_H
 class Node {
     public:
-        virtual void ProcessInputs();
-        bool IsInputAvailable();
-        bool IsOutputAvailable();
-        void PushInput(int val);
-        int PullOutput();
+        virtual void ProcessInputs() = 0;
+        virtual bool IsInputAvailable() = 0;
+        virtual bool IsOutputAvailable() = 0;
+        virtual void PushInput(int val) = 0;
+        virtual int PullOutput() = 0;
         Node () {
             _nodeno = NodeNoCount++;
         }
@@ -19,11 +19,41 @@ class Node {
 int Node::NodeNoCount;
 
 class INode : public Node {
-
+    public:
+        bool IsInputAvailable(){
+        return 0;
+    }
+    bool IsOutputAvailable() {
+        return 0;
+    }
+    void PushInput(int val) {
+    
+    }
+    int PullOutput() {
+        return 0;
+    }    
+    void ProcessInputs() {
+    
+    }
 };
 
 class ONode : public Node {
-
+    public:
+            bool IsInputAvailable(){
+        return 0;
+    }
+    bool IsOutputAvailable() {
+        return 0;
+    }
+    void PushInput(int val) {
+    
+    }
+    int PullOutput() {
+        return 0;
+    }    
+    void ProcessInputs() {
+    
+    }
 
 };
 
@@ -119,24 +149,99 @@ class SNode : public Node {
 };
 
 class MNode : public Node {
-
+    public :
+    bool IsInputAvailable(){
+        return 0;
+    }
+    bool IsOutputAvailable() {
+        return 0;
+    }
+    void PushInput(int val) {
+    
+    }
+    int PullOutput() {
+        return 0;
+    }    
+    void ProcessInputs() {
+    
+    }
 };
 
 class DNode : public Node {
-
+    public:
+    bool IsInputAvailable(){
+        return 0;
+    }
+    bool IsOutputAvailable() {
+        return 0;
+    }
+    void PushInput(int val) {
+       
+    }
+    int PullOutput() {
+        return 0;
+    }    
+    void ProcessInputs() {
+    
+    }
 };
 
 class UNode : public Node {
-
+    public:
+    bool IsInputAvailable(){
+        return 0;
+    }
+    bool IsOutputAvailable() {
+        return 0;
+    }
+    void PushInput(int val) {
+    
+    }
+    int PullOutput() {
+        return 0;
+    }    
+    void ProcessInputs() {
+    
+    }
 };
 
 
 class FNode : public Node {
-
+    public:
+    bool IsInputAvailable(){
+        return 0;
+    }
+    bool IsOutputAvailable() {
+        return 0;
+    }
+    void PushInput(int val) {
+    
+    }
+    int PullOutput() {
+        return 0;
+    }    
+    void ProcessInputs() {
+    
+    }
 };
 
 class CNode : public Node {
-
+    public:
+    bool IsInputAvailable(){
+        return 0;
+    }
+    bool IsOutputAvailable() {
+           return 0;
+    }
+    void PushInput(int val) {
+    
+    }
+    int PullOutput() {
+        return 0;
+    }    
+    void ProcessInputs() {
+    
+    }
 };
 
 #endif
