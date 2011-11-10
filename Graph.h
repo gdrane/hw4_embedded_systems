@@ -46,7 +46,8 @@ class Graph {
                 return;
             // To assert that same edge is not entered twice we can maintain edge_matrix as a map
             _edge_matrix[edge->from_node()][edge->to_node()].push_back(edge);
-        }
+        	EnterAdjacency(edge->from_node(), edge->to_node());
+		}
         
         void EnterNode(Node* node) {
             if(node == NULL || _node_map.find(node->get_node_no()) != _node_map.end()) {
