@@ -9,14 +9,51 @@ class Node {
         virtual int PullOutput() = 0;
         Node () {
             _nodeno = NodeNoCount++;
+            edge_in[0] = edge_in[1] = edge_in[2] = edge_in[3] = -1;
+            edge_out[0] = edge_out[1] = edge_out[2] = edge_out[3] = -1;
         }
         int get_node_no() { return _nodeno;}
+		void AddInEdge(int edgeno) {
+			if(edge_in_count < 4)
+				edge_in[edge_in_count++] = edgeno;
+		}
+		void AddOutEdge(int edgeno) {
+			if(edge_out_count < 4)
+				edge_out[edge_out_count++] = edgeno;
+		}
     private:
         int _nodeno;
+        int edge_in[4];
+        int edge_out[4];
+		static int edge_in_count;
+		static int edge_out_count;
         static int NodeNoCount;        
 };
 
 int Node::NodeNoCount;
+int Node::edge_in_count;
+int Node::edge_out_count;
+
+class DelayNode : public Node {
+    public:
+		int edge_no() { return edgeno;}
+		int buffer_size() { return buffersize; }
+		int old_sample() { return oldsample; }
+		int initial_sample() { return initialsample; }
+    	DelayNode(int _edgeno, int _buffer_size, int _initial_sample, int _old_sample=0) {
+	  		edgeno = _edgeno;
+			buffersize = _buffer_size;
+			initialsample = _initial_sample;
+			oldsample = _old_sample;
+		}
+
+
+	private:
+		int buffersize;
+		int initialsample;
+		int oldsample;
+		int edgeno;
+}
 
 class INode : public Node {
     public:
@@ -52,6 +89,7 @@ class INode : public Node {
 			else 
 				printf("Cannot Schedule \n");
     	}
+	char get_node_id(){return 'I';}
 	private:
 		bool inavail;
 		bool outavail;
@@ -91,6 +129,7 @@ class ONode : public Node {
 				outavail = false;
 			}
     	}
+	char get_node_id(){return 'O';}
 	private:
 		bool inavail, outavail;
 		int input, output;
@@ -132,7 +171,8 @@ class ANode : public Node {
             output = inputs[0] + inputs[1];
             outavail = true;
             inavail[0] = inavail[1] = false;
-        }     
+        }   
+	char get_node_id(){return 'A';}  
         
     private:
         int inputs[2];
@@ -177,7 +217,8 @@ class SNode : public Node {
             output = inputs[0] - inputs[1];
             outavail = true;
             inavail[0] = inavail[1] = false;
-        }        
+        }      
+	char get_node_id(){return 'S';}  
     
     private:
         int inputs[2];
@@ -221,6 +262,7 @@ class MNode : public Node {
 				outavail = true;
     		}
    		 }
+	char get_node_id(){return 'M';}
 
 	private:
 		int multconst, divconst;
@@ -269,6 +311,7 @@ class DNode : public Node {
 		int downsample() {
 			return downsample;
 		}
+	char get_node_id(){return 'D';}
 
 	private :
 		int downsample;
@@ -312,7 +355,7 @@ class UNode : public Node {
 				outavail = true;
 			}
     	}
-
+	char get_node_id(){return 'U';}
 	private:
 		int n;
 		int output, input;
@@ -337,6 +380,7 @@ class FNode : public ONode {
     void ProcessInputs() {
     
     }
+    char get_node_id(){return 'F';}
 };
 
 class CNode : public Node {
@@ -356,6 +400,7 @@ class CNode : public Node {
     void ProcessInputs() {
     
     }
+    char get_node_id(){return 'C';}
 };
 
 #endif
