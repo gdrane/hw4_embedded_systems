@@ -3,9 +3,9 @@
  * EE202A Homework #3
  */
  
-/* The ﬁrst line is a positive integer in the range [1, 65535] indicating the number of repetitions X.
+/* The &#64257;rst line is a positive integer in the range [1, 65535] indicating the number of repetitions X.
  * The second line is a positive integer in the range [1, 4096] indicting the number of input samples in one repetition, K.
- * The following lines are the sample values, as many as those speciﬁed in the second line. These are signed integers.
+ * The following lines are the sample values, as many as those speci&#64257;ed in the second line. These are signed integers.
  * The idea is that the input over which you are computing is obtained by repeating X times, the sequence of K samples.
  *
  * (1) X
@@ -25,7 +25,6 @@
 extern Serial pc;
 
 // -- Variables --
-LocalFileSystem local("local");
 signed int inBuffer[4096] __attribute__ ((section("AHBSRAM0"))); 
 
 // -- Function Headers --
