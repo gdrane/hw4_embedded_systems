@@ -97,40 +97,40 @@ Graph* ReadScheduleConfig() {
                             newnode = new SNode();
                             break;
                     case 'D' :
-							token = strtok(NULL, " ");
-							if(token == NULL) {
-								PrintSdfgFormatError();
-								return;
-							}
-							++tokeniter;
-							int dwnsample = atoi(token);
+                            token = strtok(NULL, " ");
+                            if(token == NULL) {
+                                PrintSdfgFormatError();
+                                return;
+                            }
+                            ++tokeniter;
+                            int dwnsample = atoi(token);
                             newnode = new DNode(dwnsample);
                             break;
                     case 'U' :
-							token = strtok(NULL , " ");
-							if(token == NULL) {
-								PrintSdfgFormatError();
-								return;
-							}
-							++tokeniter;
-							int upsample = atoi(token);
+                            token = strtok(NULL , " ");
+                            if(token == NULL) {
+                                PrintSdfgFormatError();
+                                return;
+                            }
+                            ++tokeniter;
+                            int upsample = atoi(token);
                             newnode = new UNode(upsample);
                             break;
                     case 'M' :
-							token = strtok(NULL, " ");
-							if(token == NULL) {
-								PrintSdfgFormatError();
-								return;
-							}
-							++tokeniter;
-							int multconst = atoi(token);
-							token = strtok(NULL, " ");
-							if(token == NULL) {
-								PrintSdfgFormatError();
-								return;
-							}
-							++tokeniter;
-							int divconst = atoi(token);
+                            token = strtok(NULL, " ");
+                            if(token == NULL) {
+                                PrintSdfgFormatError();
+                                return;
+                            }
+                            ++tokeniter;
+                            int multconst = atoi(token);
+                            token = strtok(NULL, " ");
+                            if(token == NULL) {
+                                PrintSdfgFormatError();
+                                return;
+                            }
+                            ++tokeniter;
+                            int divconst = atoi(token);
                             newnode = new MNode(multconst, divconst);
                             break;
                     case 'F' :
@@ -139,32 +139,32 @@ Graph* ReadScheduleConfig() {
                     case 'C' :
                             newnode = new CNode();
                             break;
-					case 'E' :
-							token = strtok(NULL, " ");
-							if(token == NULL) {
-								PrintSdfgFormatError();
-								return;
-							}
-							int edgeno = atoi(token);
-							token = strtok(NULL, " ");
-							if(token == NULL) {
-								PrintSdfgFormatError();
-								return;
-							}
-							int buffer_size = atoi(token);
-							token = strtok(NULL, " ");
-							if(token == NULL) {
-								PrintSdfgFormatError();
-								return;
-							}
-							int initial_sample = atoi(token);
-							token = strtok(NULL, " ");
-							int old_sample; 
-							if(token != NULL) {
-								old_sample = atoi(token);
-							}	
-							newnode = new DelayNode(edgeno, buffer_size, initial_sample, old_sample);
-							break;
+                    case 'E' :
+                            token = strtok(NULL, " ");
+                            if(token == NULL) {
+                                PrintSdfgFormatError();
+                                return;
+                            }
+                            int edgeno = atoi(token);
+                            token = strtok(NULL, " ");
+                            if(token == NULL) {
+                                PrintSdfgFormatError();
+                                return;
+                            }
+                            int buffer_size = atoi(token);
+                            token = strtok(NULL, " ");
+                            if(token == NULL) {
+                                PrintSdfgFormatError();
+                                return;
+                            }
+                            int initial_sample = atoi(token);
+                            token = strtok(NULL, " ");
+                            int old_sample; 
+                            if(token != NULL) {
+                                old_sample = atoi(token);
+                            }    
+                            newnode = new DelayNode(edgeno, buffer_size, initial_sample, old_sample);
+                            break;
                     default:
                             PrintSdfgFormatError();
                             return NULL;
@@ -179,34 +179,34 @@ Graph* ReadScheduleConfig() {
                 switch(node_type) {
                      case 'I' :
                             // I oe1 [oe2 , oe3 ...]
-							newnode->AddEgdeOut(edgeno);
-                     		input_graph->EnterOutEdge(newnode->get_node_no(), edgeno);
+                            newnode->AddOutEdge(edgeno);
+                             input_graph->EnterOutEdge(newnode->get_node_no(), edgeno);
                             break;
                     case 'O' :
                             if (tokeniter > 1) {
                                 PrintSdfgFormatError();
                                 return NULL;
                             }
-							newnode->AddInEdge(edgeno);
+                            newnode->AddInEdge(edgeno);
                             input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
                             break;
                     case 'A' :
                             // A ie1 ie2 oe1 [oe2 oe3...]
                             if(tokeniter == 1 || tokeniter == 2) {
-								newnode->AddInEdge(edgeno);
-								input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
+                                newnode->AddInEdge(edgeno);
+                                input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
                             } else {
-								newnode->AddOutEdge(edgeno);
-								input_graph->EnterOutEdge(newnode->get_node_no(), edgeno);
+                                newnode->AddOutEdge(edgeno);
+                                input_graph->EnterOutEdge(newnode->get_node_no(), edgeno);
                             }
                             break;
                     case 'S' :
                              // S ie1 ie2 oe1 [oe2 oe3 ...]
                             if( tokeniter == 1 || tokeniter == 2) {
-								newnode->AddInEdge(edgeno);
+                                newnode->AddInEdge(edgeno);
                                 input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
                             } else {
-								newnode->AddOutEdge(edgeno);
+                                newnode->AddOutEdge(edgeno);
                                 input_graph->EnterOutEdge(newnode->get_node_no(), edgeno);
                             }
                             break;
@@ -214,39 +214,39 @@ Graph* ReadScheduleConfig() {
                             // M c d ie oe1[oe2 oe3...]
                             if( tokeniter == 3) {
                                 newnode->AddInEdge(edgeno);
-								input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
+                                input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
                             } else if (tokeniter > 3){
-								newnode->AddOutEdge(edgeno);
-                                input_graph->EnterOutnewnode->get_node_no();
+                                newnode->AddOutEdge(edgeno);
+                                input_graph->EnterOutEdge(newnode->get_node_no(), edgeno);
                             }
                             break;
                     case 'D' :
                             // D n ie oe1[ oe2...]
                             if (tokeniter == 2) {
-								newnode->AddInEdge(edgeno);
-								input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
+                                newnode->AddInEdge(edgeno);
+                                input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
                             } else if (tokeniter > 2) {
-								newnode->AddOutEdge(edgeno);
-								input_graph->EnterOutEdge(newnode->get_node_no, edgeno);
+                                newnode->AddOutEdge(edgeno);
+                                input_graph->EnterOutEdge(newnode->get_node_no(), edgeno);
                             }
                             break;
                     case 'U' :
                             // U n ie oe1 [oe2 oe3...]
                             if (tokeniter == 2) {
-								newnode->AddInEdge(edgeno);
+                                newnode->AddInEdge(edgeno);
                                 input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
                             } else if(tokeniter > 2) {
-								newnode->AddOutEdge(edgeno);
+                                newnode->AddOutEdge(edgeno);
                                 input_graph->EnterOutEdge(newnode->get_node_no(), edgeno);
                             }
                             break;
                     case 'F' :
                             // F ie oe1 oe2[oe3, oe3...]
                             if (tokeniter == 1) {
-								newnode->AddInEdge(edgeno);
+                                newnode->AddInEdge(edgeno);
                                 input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
                             } else {
-								newnode->AddOutEdge(edgeno);
+                                newnode->AddOutEdge(edgeno);
                                 input_graph->EnterOutEdge(newnode->get_node_no(), edgeno);
                             }
                             break;
@@ -267,7 +267,7 @@ Graph* ReadScheduleConfig() {
         } while((token = strtok(NULL, " ")) != NULL);
     }
     sdfginput.close();
-    return(&input_graph);
+    return input_graph;
 }
 
 #endif
