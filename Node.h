@@ -20,41 +20,80 @@ int Node::NodeNoCount;
 
 class INode : public Node {
     public:
-        bool IsInputAvailable(){
-        return 0;
-    }
-    bool IsOutputAvailable() {
-        return 0;
-    }
-    void PushInput(int val) {
-    
-    }
-    int PullOutput() {
-        return 0;
-    }    
-    void ProcessInputs() {
-    
-    }
+		bool IsInputAvailable(){
+        	return inavail;
+      	}
+
+    	bool IsOutputAvailable() {
+       		return outavail;
+    	}
+
+    	void PushInput(int val) {
+    		if(!inavail) {
+				input = val;
+				inavail = true;
+			}
+    	}
+
+    	int PullOutput() {
+			if(outavail) {
+				outavail = false;
+				return output;
+			}
+        	return 0;
+    	}
+
+    	void ProcessInputs() {
+    		if(inavail) {
+				output = input;
+				inavail = false;
+				outavail = true;
+			}
+			else 
+				printf("Cannot Schedule \n");
+    	}
+	private:
+		bool inavail;
+		bool outavail;
+		int input;
+		int output;
 };
 
 class ONode : public Node {
     public:
-            bool IsInputAvailable(){
-        return 0;
-    }
-    bool IsOutputAvailable() {
-        return 0;
-    }
-    void PushInput(int val) {
-    
-    }
-    int PullOutput() {
-        return 0;
-    }    
-    void ProcessInputs() {
-    
-    }
+    	bool IsInputAvailable() {
+        	return inavail;
+    	}
 
+    	bool IsOutputAvailable() {
+        	return outavail;
+    	}
+
+    	void PushInput(int val) {
+   			if(!inavail) {
+				input = val;
+				inavail = true;
+			}
+    	}
+
+    	int PullOutput() {
+			if(outavail) {
+				outavail = false;
+				return output;
+			}
+        	return -1;
+    	}
+
+    	void ProcessInputs() {
+    		if(inputavail) {
+				output = input; 
+				inavail = true;
+				outavail = false;
+			}
+    	}
+	private:
+		bool inavail, outavail;
+		int input, output;
 };
 
 class ANode : public Node {
@@ -83,7 +122,7 @@ class ANode : public Node {
         int PullOutput() {
             if(!outavail)
                 return -1;
-            outavail = true;
+            outavail = false;
             return output;
         }
         
@@ -128,7 +167,7 @@ class SNode : public Node {
         int PullOutput() {
             if(!outavail)
                 return -1;
-            outavail = true;
+            outavail = false;
             return output;
         }
         
@@ -150,72 +189,147 @@ class SNode : public Node {
 
 class MNode : public Node {
     public :
-    bool IsInputAvailable(){
-        return 0;
-    }
-    bool IsOutputAvailable() {
-        return 0;
-    }
-    void PushInput(int val) {
-    
-    }
-    int PullOutput() {
-        return 0;
-    }    
-    void ProcessInputs() {
-    
-    }
-};
+		MNode(int _multconst, int _divconst) {
+			multconst = _multconst;
+			divconst = _divconst;
+		}
+    	bool IsInputAvailable(){
+        	return inavail;
+    	}
+    	bool IsOutputAvailable() {
+       	 	return outavail;
+    	}
+   		void PushInput(int val) {
+    		if(!inavail) {
+				inavail = true;
+				input = val;
+			} else {
+				printf("Schedule Error");
+			}
+    	}
+    	int PullOutput() {
+			if(outavail) {
+				outavail = false;
+				return output;
+			}
+        	return 0;
+    	}    
+    	void ProcessInputs() {
+			if(inavail) {
+				inavail = false;
+				output = input * multconst / divconst;
+				outavail = true;
+    		}
+   		 }
+
+	private:
+		int multconst, divconst;
+		int input, output;
+		bool inavail, outavail;
+};	
 
 class DNode : public Node {
     public:
-    bool IsInputAvailable(){
-        return 0;
-    }
-    bool IsOutputAvailable() {
-        return 0;
-    }
-    void PushInput(int val) {
-       
-    }
-    int PullOutput() {
-        return 0;
-    }    
-    void ProcessInputs() {
-    
-    }
+		DNode(int _nsample) {
+			downsample = _nsample;
+		}
+
+
+    	bool IsInputAvailable(){
+        	return inavail;
+    	}
+
+    	bool IsOutputAvailable() {
+        	return outavail;
+   		}	
+
+    	void PushInput(int val){
+       		if(!inavail) {
+				inavail = true;
+				input = val;
+			}
+    	}
+
+    	int PullOutput() {
+			if(outavail) {
+				outavail = false;
+				return output;
+			}
+        	return -1;
+    	}
+
+    	void ProcessInputs() {
+    		if(inavail)	{
+				inavail = false;
+				input = output;
+				outavail = true;
+			}
+    	}
+
+		int downsample() {
+			return downsample;
+		}
+
+	private :
+		int downsample;
+		int output, input;
+		bool inavail, outavail;
 };
 
 class UNode : public Node {
     public:
-    bool IsInputAvailable(){
-        return 0;
-    }
-    bool IsOutputAvailable() {
-        return 0;
-    }
-    void PushInput(int val) {
-    
-    }
-    int PullOutput() {
-        return 0;
-    }    
-    void ProcessInputs() {
-    
-    }
+		UNode(int _nsample) {
+			upsample = _nsample;
+		}
+
+    	bool IsInputAvailable(){
+        	return inavail;
+    	}
+
+    	bool IsOutputAvailable() {
+        	return outavail;
+    	}	
+
+    	void PushInput(int val) {
+    		if(!inavail) {
+				inavail = true;
+				input = val
+			}
+    	}
+
+    	int PullOutput() {
+			if(outavail) {
+				outavail = false;
+				return output;
+			}
+        	return 0;
+    	} 
+
+    	void ProcessInputs() {
+   	 		if(inavail) {
+				inavail = false;
+				output = input;
+				outavail = true;
+			}
+    	}
+
+	private:
+		int n;
+		int output, input;
+		bool inavail, outavail;
 };
 
 
-class FNode : public Node {
+class FNode : public ONode {
     public:
     bool IsInputAvailable(){
-        return 0;
+        return ONode::IsInputAvailable();
     }
     bool IsOutputAvailable() {
-        return 0;
+        return ONodeIsOutputAvailable();
     }
     void PushInput(int val) {
-    
+    	ONOde:
     }
     int PullOutput() {
         return 0;
