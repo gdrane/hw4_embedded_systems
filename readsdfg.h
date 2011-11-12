@@ -11,6 +11,7 @@
 
 // -- defines --
 #define INPUT_SIZE 20
+#define MAX_BUFFER 10
 
 // -- variables --
 
@@ -18,7 +19,6 @@ struct edge_info{
     int edgeno,from,to;
 };
 int edge_count = 0;
-map<int,struct edge_info> edges;
 
 // -- function headers --
 void PrintSdfgFormatError();
@@ -65,24 +65,23 @@ Graph* ReadScheduleConfig() {
         PrintSdfgFormatError();
         return NULL;
     }
-    pc.printf("Nodes: %d, Edges: %d\n\r", noofnodes, noofedges);
     input_graph = new Graph(noofnodes, noofedges);
-    pc.printf("Nodes: %d, Edges: %d\n\r", noofnodes, noofedges);
     while(!sdfginput.eof()) {
         char node_type = '\0';
         int tokeniter = 0;
         Node *newnode;
         sdfginput.getline(str, input_size);
-        pc.printf("str: %s\n\r",str);
         char *token = strtok(str, " ");
         do {
-            pc.printf("Token: %s\n\r",token);
             if (token == NULL) {
                 PrintSdfgFormatError();
                 return NULL;
             }
             if (node_type == '\0') {
                 node_type = token[tokeniter];
+                // initialize variables used in switch
+                int multconst,divconst,edgeno,buffer_size,dwnsample,upsample = 0;
+                int ICs[MAX_BUFFER];
                 switch(node_type) {
                     case 'I' :
                             newnode = new INode();
@@ -100,37 +99,37 @@ Graph* ReadScheduleConfig() {
                             token = strtok(NULL, " ");
                             if(token == NULL) {
                                 PrintSdfgFormatError();
-                                return;
+                                return NULL;
                             }
                             ++tokeniter;
-                            int dwnsample = atoi(token);
+                            dwnsample = atoi(token);
                             newnode = new DNode(dwnsample);
                             break;
                     case 'U' :
                             token = strtok(NULL , " ");
                             if(token == NULL) {
                                 PrintSdfgFormatError();
-                                return;
+                                return NULL;
                             }
                             ++tokeniter;
-                            int upsample = atoi(token);
+                            upsample = atoi(token);
                             newnode = new UNode(upsample);
                             break;
                     case 'M' :
                             token = strtok(NULL, " ");
                             if(token == NULL) {
                                 PrintSdfgFormatError();
-                                return;
+                                return NULL;
                             }
                             ++tokeniter;
-                            int multconst = atoi(token);
+                            multconst = atoi(token);
                             token = strtok(NULL, " ");
                             if(token == NULL) {
                                 PrintSdfgFormatError();
-                                return;
+                                return NULL;
                             }
                             ++tokeniter;
-                            int divconst = atoi(token);
+                            divconst = atoi(token);
                             newnode = new MNode(multconst, divconst);
                             break;
                     case 'F' :
@@ -143,38 +142,38 @@ Graph* ReadScheduleConfig() {
                             token = strtok(NULL, " ");
                             if(token == NULL) {
                                 PrintSdfgFormatError();
-                                return;
+                                return NULL;
                             }
-                            int edgeno = atoi(token);
+                            edgeno = atoi(token);
                             token = strtok(NULL, " ");
                             if(token == NULL) {
                                 PrintSdfgFormatError();
-                                return;
+                                return NULL;
                             }
-                            int buffer_size = atoi(token);
-                            token = strtok(NULL, " ");
-                            if(token == NULL) {
-                                PrintSdfgFormatError();
-                                return;
-                            }
-                            int initial_sample = atoi(token);
-                            token = strtok(NULL, " ");
-                            int old_sample; 
-                            if(token != NULL) {
-                                old_sample = atoi(token);
-                            }    
-                            newnode = new DelayNode(edgeno, buffer_size, initial_sample, old_sample);
+                            buffer_size = atoi(token);
+                            
+                            // loop through initial conditions
+                            for(int i=0; i<buffer_size; i++){
+                                token = strtok(NULL, " ");
+                                if(token == NULL) {
+                                    PrintSdfgFormatError();
+                                    return NULL;
+                                }
+                                ICs[i] = atoi(token);
+                            }  
+                            // do not create a new node, just enter the delay info in the graph
+                            input_graph->EnterDelay(edgeno, buffer_size, ICs);
                             break;
                     default:
                             PrintSdfgFormatError();
                             return NULL;
                 }
-                // Adding to node to graph map
+                // Adding the node to graph map
                 input_graph->EnterNode(newnode);
             }
             // For the Edge information
             if(tokeniter > 0) {
-                struct edge_info temp;
+                struct edge_info;
                 int edgeno = atoi(token);
                 switch(node_type) {
                      case 'I' :
