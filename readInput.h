@@ -72,6 +72,8 @@ void readInput(int* x, int* k){
     *x = _x;
     *k = _k;
 
+    // set pin 23 for grading purposes
+    set(23);
 }
 bool isNumeric(const char* input){
     string inputStr = input;

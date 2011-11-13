@@ -1,21 +1,23 @@
 #ifndef SCHEDULER_H
 #define SCHEDULER_H
-#include <string>
 
+#include <string>
 #include "Graph.h"
 #include "Node.h"
 
 #define MAX_SCHED_LEN 128
 
 using namespace std;
-class Scheduler {
+class Scheduler{
     public:
-        // variables
-        int _schedule[MAX_SCHED_LEN];
+        Scheduler(Graph* inputGraph){
+            topology = inputGraph;
+            _schedLen = 0;
+        }
         
-        bool isSchedulable(Graph* topology){
+        bool isSchedulable(){
             /* Iterate through all nodes. If input values
-             * are available on that node, push output and repeat.
+             * are available on all inputedges, push output and repeat.
              * This will probably end up with the input going first, because
              * it is likely to be parsed into a lower nodeId, which is desirable
              * in terms of aesthetics.
@@ -24,68 +26,113 @@ class Scheduler {
             // graph information
             int numNodes = topology->getNumNodes();
             int numEdges = topology->getNumEdges();
-            // keep track of schedule, padd for multiple executions
+            
+            // keep track of schedule, pad for multiple executions
             int testSchedule[MAX_SCHED_LEN];
             int scheduledNodes = 0;
-            // storage pointer for iteration 
-            Node* tempNode;
-            int* tempIn;
-            int* tempOut;
-            int pushable;
-            while(true){
-                for(int node=0; node<numNodes; ++node){
-                    tempNode = topology->getNode(node);
-                    if(tempNode->IsInputAvailable()){
-                        if(tempNode->get_node_id() == 'O'){
-                            // this is the output node, i.e. we have completed a cycle.
-                            // break out of the loop and store test schedule as final schedule.
-                            for(int i=0; i< MAX_SCHED_LEN; i++){
-                                _schedule[i] = testSchedule[i];
-                            return true;
-                        }
-                        // inputs are available, but can we push them? If this is an upsampler, can
-                        // we push `n' data points?
-                        pushable = topology->numPushable(node);
-                        if(tempNode->get_node_id() == 'U'){
-                            if(pushable < tempNode->getNumSamples))
-                                continue;
-                        }else{
-                            if(pushable == 0){
-                                continue;
-                            }
-                        }
-                        // inputs available on this node and we can push the output. process these inputs,
-                        // push them to output, and "pull" outputs from our input(s) 
-                        tempNode->ProcessInputs();
-                        tempIn = tempNode->getInEdges();
-                        tempOut = tempNode->getOutEdges();
-                        // pull outputs from incoming nodes
-                        for(int i=0; i<4; i++){
-                            int inEdge = tempIn[i];
-                            if(inNode != -1)
-                                topology->getNode(inNode)->PullOutput();
-                        }
-                        // push outputs to outgoing nodes
-                        for(int i=0; i<4; i++){
-                            int outEdge = tempOut[i];
-                            if(outNode != -1)
-                                topology->getNode(outNode)->PushInput(0);
-                        }
-                        // we just executed this node, put it to the test schedule
-                        testSchedule[scheduledNodes++] = node;
-                        // do not check the rest of the nodes, because we just pushed an output.
-                        continue;
+            
+            // flags for finished schedule
+            bool outputReached = false;
+            int initialNode = -1;
+            
+            // iteration variables
+            int nodeToSchedule = -1;
+            bool canGo[numNodes];
+            bool oneCanGo = false;
+            int numRuns[numNodes];
+            for(int i=0; i<numNodes; i++){
+                canGo[i] = false;
+                numRuns[i] = 0;
+            }
+            int minRuns = 0;
+            
+            // scheduling loop
+            while(1){
+                // get a list of those that can run
+                oneCanGo = false;
+                for(int i=0; i<numNodes; i++){
+                    if(isReadyToSchedule(i)){
+                        canGo[i] = true;
+                        oneCanGo = true;
                     }
                 }
-                // if we ever get this far, then we checked all nodes and no node is ready to
-                // be processed. In other words, this is not schedulable.
+                if(!oneCanGo)
+                    // no node can go
+                    return false;
+                    
+                // schedule the one that has gone the least
+                minRuns = 1000;
+                for(int i=0; i<numNodes; i++){
+                    if(canGo[i] && numRuns[i] < minRuns){
+                        minRuns = numRuns[i];
+                    }
+                }
+                for(int i=0; i<numNodes; i++){
+                    if(canGo[i] && numRuns[i] == minRuns){
+                        // schedule it
+                        nodeToSchedule = i;
+                        numRuns[i] = numRuns[i]+1;
+                        break;
+                    }
+                }
+
+                // inputs available on this node and we can push the output. process these inputs
+                
+                topology->processNode(nodeToSchedule);
+                if(initialNode == -1){
+                    initialNode = nodeToSchedule;
+                }
+                if(topology->getNode(nodeToSchedule)->get_node_id() == 'O')
+                    outputReached = true;
+                    
+                // check to see if our schedule is complete
+                if(initialNode == nodeToSchedule && outputReached){
+                    for(int i=0; i<scheduledNodes; i++){
+                        _schedule[i] = testSchedule[i];
+                    }
+                    _schedLen = scheduledNodes;
+                    return true;
+                }
+                
+                // we just executed this node, put it to the test schedule
+                testSchedule[scheduledNodes++] = nodeToSchedule;
+                 
+            }
+        }
+      
+        bool isReadyToSchedule(int node){
+            Node* thisNode = topology->getNode(node);
+            int numInputs = topology->numInputsAvailable(thisNode->get_node_no(), true);
+            int numPushable = topology->numPushable(thisNode->get_node_no(), true);
+            
+            if(numInputs > 0 && numPushable > 0){
+                               
+                // if this is a downsampler, are enough inputs available?
+                if(thisNode->get_node_id() == 'D'){
+                    if(numInputs < ((DNode*)thisNode)->getN())
+                        return false;
+                }
+                // if this is an upsampler, is there enough pushable?
+                if(thisNode->get_node_id() == 'U'){
+                    if(numPushable < ((UNode*)thisNode)->getN())
+                        return false;
+                }
+                
+                // otherwise this node is ready to be scheduled
+                return true;
+            }else{
                 return false;
-            }  
+            }
             
         }
         
-        
-        void PrintSchedule(Graph* topology) {
+        int getScheduleLength(){
+            return _schedLen;
+        }
+        int* getSchedule(){
+            return _schedule;
+        }
+        void PrintSchedule(){
             string scheduleToPrint;
             for(int i=0; i<MAX_SCHED_LEN; i++){
                 if(_schedule[i] != 0){
@@ -96,9 +143,12 @@ class Scheduler {
                 }
             }
         }
-         
-    private:
         
+    private:
+        // variables
+        Graph* topology;
+        int _schedule[MAX_SCHED_LEN];
+        int _schedLen;
 };
 
 #endif

@@ -8,6 +8,7 @@
 #include "mbed.h"
 #include "Graph.h"
 #include "Node.h"
+#include "Edge.h"
 
 // -- defines --
 #define INPUT_SIZE 20
@@ -80,7 +81,7 @@ Graph* ReadScheduleConfig() {
             if (node_type == '\0') {
                 node_type = token[tokeniter];
                 // initialize variables used in switch
-                int multconst,divconst,edgeno,buffer_size,dwnsample,upsample = 0;
+                int multconst,divconst,edgeno,buffer_size,dwnsample,upsample,constant = 0;
                 int ICs[MAX_BUFFER];
                 switch(node_type) {
                     case 'I' :
@@ -136,7 +137,14 @@ Graph* ReadScheduleConfig() {
                             newnode = new FNode();
                             break;
                     case 'C' :
-                            newnode = new CNode();
+                            token = strtok(NULL, " ");
+                            if(token == NULL) {
+                                PrintSdfgFormatError();
+                                return NULL;
+                            }
+                            ++tokeniter;
+                            constant = atoi(token);
+                            newnode = new CNode(constant);
                             break;
                     case 'E' :
                             token = strtok(NULL, " ");
@@ -178,83 +186,73 @@ Graph* ReadScheduleConfig() {
                 switch(node_type) {
                      case 'I' :
                             // I oe1 [oe2 , oe3 ...]
-                            newnode->AddOutEdge(edgeno);
-                             input_graph->EnterOutEdge(newnode->get_node_no(), edgeno);
+                            input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
                             break;
                     case 'O' :
                             if (tokeniter > 1) {
                                 PrintSdfgFormatError();
                                 return NULL;
                             }
-                            newnode->AddInEdge(edgeno);
-                            input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
+                            input_graph->EnterOutEdge(newnode->get_node_no(), edgeno);
                             break;
                     case 'A' :
                             // A ie1 ie2 oe1 [oe2 oe3...]
                             if(tokeniter == 1 || tokeniter == 2) {
-                                newnode->AddInEdge(edgeno);
-                                input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
-                            } else {
-                                newnode->AddOutEdge(edgeno);
                                 input_graph->EnterOutEdge(newnode->get_node_no(), edgeno);
+                            } else {
+                                input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
                             }
                             break;
                     case 'S' :
                              // S ie1 ie2 oe1 [oe2 oe3 ...]
                             if( tokeniter == 1 || tokeniter == 2) {
-                                newnode->AddInEdge(edgeno);
-                                input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
-                            } else {
-                                newnode->AddOutEdge(edgeno);
                                 input_graph->EnterOutEdge(newnode->get_node_no(), edgeno);
+                            } else {
+                                input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
                             }
                             break;
                     case 'M' :
                             // M c d ie oe1[oe2 oe3...]
                             if( tokeniter == 3) {
-                                newnode->AddInEdge(edgeno);
-                                input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
-                            } else if (tokeniter > 3){
-                                newnode->AddOutEdge(edgeno);
                                 input_graph->EnterOutEdge(newnode->get_node_no(), edgeno);
+                            } else if (tokeniter > 3){
+                                input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
                             }
                             break;
                     case 'D' :
                             // D n ie oe1[ oe2...]
                             if (tokeniter == 2) {
-                                newnode->AddInEdge(edgeno);
-                                input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
-                            } else if (tokeniter > 2) {
-                                newnode->AddOutEdge(edgeno);
                                 input_graph->EnterOutEdge(newnode->get_node_no(), edgeno);
+                                // pad the buffer on this edge
+                                int n = ((DNode*)newnode)->getN();
+                                input_graph->getEdge(edgeno)->addPadding(n);
+                            } else if (tokeniter > 2) {
+                                input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
                             }
                             break;
                     case 'U' :
                             // U n ie oe1 [oe2 oe3...]
                             if (tokeniter == 2) {
-                                newnode->AddInEdge(edgeno);
-                                input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
-                            } else if(tokeniter > 2) {
-                                newnode->AddOutEdge(edgeno);
                                 input_graph->EnterOutEdge(newnode->get_node_no(), edgeno);
+                            } else if(tokeniter > 2) {
+                                input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
+                                // pad the buffer on this edge
+                                int n = ((UNode*)newnode)->getN();
+                                input_graph->getEdge(edgeno)->addPadding(n);
                             }
                             break;
                     case 'F' :
                             // F ie oe1 oe2[oe3, oe3...]
                             if (tokeniter == 1) {
-                                newnode->AddInEdge(edgeno);
-                                input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
-                            } else {
-                                newnode->AddOutEdge(edgeno);
                                 input_graph->EnterOutEdge(newnode->get_node_no(), edgeno);
+                            } else {
+                                input_graph->EnterInEdge(newnode->get_node_no(), edgeno);
                             }
                             break;
                     case 'C' :
                             // C k
-                            if (tokeniter > 1) {
-                                PrintSdfgFormatError();
-                                return NULL;
-                            }
+                            // no inputs, just outputs here
+                            input_graph->EnterOutEdge(newnode->get_node_no(),edgeno);
                             break;
                     default: break;
 

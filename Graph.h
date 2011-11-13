@@ -2,6 +2,7 @@
 #define GRAPH_H
 
 #include "Node.h"
+#include "Edge.h"
 
 using namespace std;
 #define MAX_NODES 30
@@ -9,14 +10,13 @@ using namespace std;
 
 class Graph {
     public:
+        // Constructor & Destructor
         Graph(int noofnodes, int noofedges) {
             _noofnodes = noofnodes;
             _noofedges = noofedges;
-            // clear out memory used for our arrays (not necessary?)
-            for(int i=0; i<MAX_NODES; i++){
-                edgeinfo[i][0] = 0;
-                edgeinfo[i][1] = 0;
-                delayinfo[i][0] = 0;
+            // make all edges
+            for(int i=1; i<=noofedges; i++){
+                edges[i] = new Edge(i);
             }
         }
         
@@ -29,23 +29,20 @@ class Graph {
             }
         }    
         
-        void EnterOutEdge(int node_no, int edgeno) {
-            if(edgeno < MAX_NODES) 
-                edgeinfo[edgeno][0] = node_no;
+        void EnterOutEdge(int nodeno, int edgeno) {
+            // add the output to this edge
+            edges[edgeno]->enterOutput(nodeno);
         }
 
-        void EnterInEdge(int node_no, int edgeno) {
-            if(edgeno < MAX_NODES) 
-                edgeinfo[edgeno][1] = node_no;
+        void EnterInEdge(int nodeno, int edgeno) {
+            // add the output to this edge
+            edges[edgeno]->enterInput(nodeno);
         }
         
         void EnterDelay(int edgeno, int delayCount, int* ic){
-            if(edgeno < MAX_NODES){
-                delayinfo[edgeno][0] = delayCount;
-                delayinfo[edgeno][1] = 0; // num queued
-                for(int i=0; i<delayCount; i++){
-                    delayinfo[edgeno][1+i] = ic[i];
-                }
+            edges[edgeno]->enterDelay(delayCount);
+            for(int i=0; i<delayCount; i++){
+                edges[edgeno]->push(ic[i]);
             }
         }
         
@@ -60,61 +57,97 @@ class Graph {
         Node* getNode(int key){
            return nodes[key];
         }
-        int pullOneInput(int nodeno, int edgeno){
-            Node* thisNode = nodes[nodeno];
-            Node* inNode;
-            if(delayinfo[edgeno][0] > 0){
-                // buffer on this edge 
-                if(delayinfo[nodeno][1] == delayinfo[nodeno][0]){
-                    return 0;
-                }else{
-                    // underfull buffer -> can push
-                    tempPushable =  delayinfo[nodeno][0] - delayinfo[nodeno][1];
-                    if(tempPushable < minPushable)
-                        minPushable = tempPushable;
+        
+        Edge* getEdge(int key){
+            return edges[key];
+        }
+        int getInputNode(){
+            for(int i=0; i<_noofnodes; i++){
+                if(nodes[i]->get_node_id() == 'I')
+                    return i;
+            }
+            return -1;
+        }
+        
+        int numInputsAvailable(int nodeno, bool scheduling){
+            /* check the minimum number of inputs available
+             * on any given input edge of this node
+             */
+             
+             // if we're scheduling, Input node always has inputs
+             if(scheduling && getNode(nodeno)->get_node_id() == 'I'){
+                return 1000;
+            }
+            
+            // constant nodes always have inputs
+            if(getNode(nodeno)->get_node_id() == 'C'){
+                return 1000;
+            }
+                      
+            int minAvailable = 1000;
+            int tempAvailable = 1000;
+            // find the input edges to this node
+            for(int i=1; i<=_noofedges; i++){
+                if(edges[i]->getOutput() == nodeno){
+                    // this edge points to this node
+                    tempAvailable = edges[i]->numPoppable();
+                    if(tempAvailable < minAvailable){
+                        minAvailable = tempAvailable;
                     }
-            }else{
-                // no buffer on this edge
-                outNode = nodes[edgeinfo[thisEdge][1]];
-                if(outNode->IsInputAvailable())
-                    return 0;
-                // no buffer, inputs not there yet -> can push
-                minPushable = 1;
+                }
+            }
+            return minAvailable;
+        }
+        
+        void processNode(int nodeno){
+            Node* thisNode = nodes[nodeno];
+            // get inputs, accounting for downsamples
+            int inputVals[MAX_DELAY];
+            int index = 0;
+            
+            int N = 1;
+            if(thisNode->get_node_id() == 'D')
+                N = ((DNode*)thisNode)->getN();
+            for(int n=0; n<N; n++){
+                for(int e=1; e<=_noofedges; e++){
+                    if(edges[e]->getOutput() == nodeno){
+                        inputVals[index++] = edges[e]->pop();
+                    }
+                }
+            }
+            // process and push outputs, accounting for upsamples
+            int outVal = thisNode->ProcessInputs(inputVals);
+            N = 1;
+            if(thisNode->get_node_id() == 'U')
+                N = ((UNode*)thisNode)->getN();
+            for(int n=0; n<N; n++){
+                for(int e=1; e<=_noofedges; e++){
+                    if(edges[e]->getInput() == nodeno){
+                        edges[e]->push(outVal);
+                    }
+                }
             }
         }
         
-        void PushOneOutput(int nodeno){
-        }
-        
-        int numPushable(int nodeno){
-            // loop through all output nodes to see if they
-            // can accept an input, or if the output edge has
-            // an underfull buffer
-            Node* thisNode = nodes[nodeno];
-            Node* outNode;
-            int numOut = thisNode->getNumOutputs();
-            int thisEdge = 0;
-            int minPushable, tempPushable = 0;
-            for(int i=0; i<numOut; i++){
-                thisEdge = thisNode->getOutEdge(i);
-                // buffer on this edge
-                if(delayinfo[thisEdge][0] > 0){
-                    // full buffer -> can't push   
-                    if(delayinfo[thisEdge][1] == delayinfo[thisEdge][0]){
-                        return 0;
-                    }else{
-                        // underfull buffer -> can push
-                        tempPushable =  delayinfo[thisEdge][0] - delayinfo[thisEdge][1];
-                        if(tempPushable < minPushable)
-                            minPushable = tempPushable;
-                        }
-                }else{
-                    // no buffer, inputs already there -> can't push
-                    outNode = nodes[edgeinfo[thisEdge][1]];
-                    if(outNode->IsInputAvailable())
-                        return 0;
-                    // no buffer, inputs not there yet -> can push
-                    minPushable = 1;
+        int numPushable(int nodeno, bool scheduling){
+            // loop through all output edges to see if they
+            // can accept an input
+            
+            // output node can always be pushed
+            if(getNode(nodeno)->get_node_id() == 'O'){
+                return 1000;
+            }
+                        
+            int minPushable = 1000;
+            int tempPushable = 1000;
+            
+            // find the out edges of this node
+            for(int i=1; i<=_noofedges; i++){
+                if(edges[i]->getInput() == nodeno){
+                    tempPushable = edges[i]->numPushable();
+                    if(tempPushable < minPushable){
+                        minPushable = tempPushable;
+                    }
                 }
             }
             return minPushable;
@@ -125,23 +158,33 @@ class Graph {
             pc.printf("\n\r------ Graph Topology ---------\n\r");
             pc.printf(" %d Nodes and %d Edges\n\r",_noofnodes,_noofedges);
             pc.printf("Nodes: \n\r");
+            pc.printf("------------------\n\r");
             for(int i=0; i<_noofnodes; i++){
-                pc.printf("%c%d ",nodes[i]->get_node_id(),nodes[i]->get_node_no());
+                pc.printf("%c%d\n\r",nodes[i]->get_node_id(),nodes[i]->get_node_no());
             }
             pc.printf("\n\rEdges: \n\r");
+            pc.printf("------------------\n\r");
             for(int i=1; i<=_noofedges; i++){
-                pc.printf("(%d,%d) ",edgeinfo[i][0],edgeinfo[i][1]);
+                pc.printf("%d: (%d,%d)\n\r",i,edges[i]->getInput(), edges[i]->getOutput());
             }
             pc.printf("\n\rDelays: \n\r");
-            for(int i=2; i<_noofedges+2; i++){
-                if(delayinfo[i][0] > 0)
-                    pc.printf("(%d @ %d) ", delayinfo[i][0], i);
+            pc.printf("------------------\n\r");
+            for(int i=1; i<=_noofedges; i++){
+                if(edges[i]->hasDelay())
+                    pc.printf("(%d @ %d)\n\r", edges[i]->numPoppable(), edges[i]->getId());
             }
+            pc.printf("\n\rBuffers: \n\r");
+            pc.printf("------------------\n\r");
+            for(int i=1; i<=_noofedges; i++){
+                pc.printf("%d: %d\n\r", i,edges[i]->bufferSize());
+            }
+            pc.printf("\n\r");
+            
         }
         
+   private:
        Node* nodes[MAX_NODES];
-       int edgeinfo[MAX_NODES][2];
-       int delayinfo[MAX_NODES][MAX_DELAY+2];
+       Edge* edges[MAX_NODES];
        int _noofnodes;
        int _noofedges;
 };
