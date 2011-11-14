@@ -30,12 +30,12 @@ int main() {
     t.start();
     // -- parse sdfg file --
     Graph* topology = ReadScheduleConfig();
-    //topology->Print();
+    topology->Print();
     // -- schedulability test --
     Scheduler* scheduler = new Scheduler(topology);
     bool scheduled = scheduler->isSchedulable();
+    timeElapsed = t.read_ms();
     if(scheduled){
-        timeElapsed = t.read_ms();
         pc.printf("SCHEDULE: ");
         int* schedule = scheduler->getSchedule();
         int schedLen = scheduler->getScheduleLength();
@@ -54,7 +54,7 @@ int main() {
     int x,k;
     readInput(&x,&k);
     
-    
-    while(1) {     
+    while(1) {
+        // do nothing forever, and be good at it!
     }
 }

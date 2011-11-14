@@ -115,7 +115,7 @@ class UNode : public Node {
         virtual int ProcessInputs(int* in) {
             return in[0];
         }
-        virtual char get_node_id(){return 'D';}
+        virtual char get_node_id(){return 'U';}
 
         int getN() {
             return _upsample;

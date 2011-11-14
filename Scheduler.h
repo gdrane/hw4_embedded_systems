@@ -34,69 +34,126 @@ class Scheduler{
             // flags for finished schedule
             bool outputReached = false;
             int initialNode = -1;
+            bool hasLoopedOnce = false;
+            bool allHaveGone = false;
             
             // iteration variables
             int nodeToSchedule = -1;
             bool canGo[numNodes];
             bool oneCanGo = false;
+            bool inOriginalState = true;
+            int originalState[numNodes][2];
+            
             int numRuns[numNodes];
             for(int i=0; i<numNodes; i++){
                 canGo[i] = false;
+                originalState[i][0] = topology->numInputsAvailable(i, true);
+                originalState[i][1] = topology->numPushable(i, true);
                 numRuns[i] = 0;
             }
             int minRuns = 0;
             
             // scheduling loop
             while(1){
+                /*
+                wait_ms(1000);
+                pc.printf("\n\r\n\rorigA: ");
+                for(int i=0; i<numNodes; i++){
+                    pc.printf("%d ",originalState[i][0]);
+                }
+                pc.printf("\n\rorigP: ");
+                for(int i=0; i<numNodes; i++){
+                    pc.printf("%d ",originalState[i][1]);
+                }
+                pc.printf("\n\ravail: ");
+                for(int i=0; i<numNodes; i++){
+                    pc.printf("%d ",topology->numInputsAvailable(i, true));
+                }
+                pc.printf("\n\rpush: ");
+                for(int i=0; i<numNodes; i++){
+                    pc.printf("%d ",topology->numPushable(i, true));
+                }
+                pc.printf("\n\rcango: ");
+                for(int i=0; i<numNodes; i++){
+                    pc.printf("%d ",canGo[i]);
+                }
+                */
                 // get a list of those that can run
                 oneCanGo = false;
                 for(int i=0; i<numNodes; i++){
                     if(isReadyToSchedule(i)){
                         canGo[i] = true;
                         oneCanGo = true;
+                    }else{
+                        canGo[i] = false;
                     }
                 }
                 if(!oneCanGo)
                     // no node can go
                     return false;
-                    
-                // schedule the one that has gone the least
-                minRuns = 1000;
-                for(int i=0; i<numNodes; i++){
-                    if(canGo[i] && numRuns[i] < minRuns){
-                        minRuns = numRuns[i];
+                // if the output can be scheduled, schedule it with highest priority
+                int outputNode = topology->getOutputNode();
+                if(canGo[outputNode]){
+                    nodeToSchedule = outputNode;
+                    numRuns[outputNode] = numRuns[outputNode]+1;
+                }else{
+                    // schedule the one that has gone the least
+                    minRuns = 1000;
+                    for(int i=0; i<numNodes; i++){
+                        if(canGo[i] && numRuns[i] < minRuns){
+                            minRuns = numRuns[i];
+                        }
                     }
-                }
-                for(int i=0; i<numNodes; i++){
-                    if(canGo[i] && numRuns[i] == minRuns){
-                        // schedule it
-                        nodeToSchedule = i;
-                        numRuns[i] = numRuns[i]+1;
-                        break;
+                    for(int i=0; i<numNodes; i++){
+                        if(canGo[i] && numRuns[i] == minRuns){
+                            // schedule it
+                            nodeToSchedule = i;
+                            numRuns[i] = numRuns[i]+1;
+                            break;
+                        }
                     }
                 }
 
                 // inputs available on this node and we can push the output. process these inputs
-                
                 topology->processNode(nodeToSchedule);
-                if(initialNode == -1){
-                    initialNode = nodeToSchedule;
-                }
+                //pc.printf("node to schedule: %d\n\r",nodeToSchedule);
+                
+                // check to see if output has been reached yet
                 if(topology->getNode(nodeToSchedule)->get_node_id() == 'O')
                     outputReached = true;
+                // check if all have gone
+                allHaveGone = true;
+                for(int i=0; i<numNodes; i++){
+                    if(numRuns[i] < 1)
+                        allHaveGone = false;
+                }
+                // see if this is a repeatable loop -- we must be back in the original state
+                inOriginalState = true;
+                for(int i=0; i<numNodes; i++){
+                    int numInputs = topology->numInputsAvailable(i, true);
+                    int numPushable = topology->numPushable(i, true);
+                    if(numInputs != originalState[i][0] || numPushable != originalState[i][1]){
+                        inOriginalState = false;
+                        break;
+                    }
+                }
+                
+                // we just executed this node, put it to the test schedule
+                testSchedule[scheduledNodes++] = nodeToSchedule;
+                if(scheduledNodes >= MAX_SCHED_LEN){
+                    pc.printf("SCHEDULE HAS REACHED MAX LENGTH\n\r");
+                    return false;
+                }
                     
                 // check to see if our schedule is complete
-                if(initialNode == nodeToSchedule && outputReached){
+                //pc.printf("output / allgone /orig : %d, %d, %d, %d\n\r",outputReached,allHaveGone,inOriginalState);
+                if(outputReached && allHaveGone && inOriginalState){
                     for(int i=0; i<scheduledNodes; i++){
                         _schedule[i] = testSchedule[i];
                     }
                     _schedLen = scheduledNodes;
                     return true;
                 }
-                
-                // we just executed this node, put it to the test schedule
-                testSchedule[scheduledNodes++] = nodeToSchedule;
-                 
             }
         }
       
@@ -106,7 +163,6 @@ class Scheduler{
             int numPushable = topology->numPushable(thisNode->get_node_no(), true);
             
             if(numInputs > 0 && numPushable > 0){
-                               
                 // if this is a downsampler, are enough inputs available?
                 if(thisNode->get_node_id() == 'D'){
                     if(numInputs < ((DNode*)thisNode)->getN())

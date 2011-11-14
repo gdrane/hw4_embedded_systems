@@ -68,6 +68,13 @@ class Graph {
             }
             return -1;
         }
+        int getOutputNode(){
+            for(int i=0; i<_noofnodes; i++){
+                if(nodes[i]->get_node_id() == 'O')
+                    return i;
+            }
+            return -1;
+        }
         
         int numInputsAvailable(int nodeno, bool scheduling){
             /* check the minimum number of inputs available

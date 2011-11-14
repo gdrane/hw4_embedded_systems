@@ -38,8 +38,11 @@ class Edge {
         
         // Ring Buffer operations
         void enterDelay(int delay){
-            _hasDelay = true;
-            _buffLen = delay;
+            if(delay > 0){
+                _hasDelay = true;
+                if(delay > _buffLen);
+                    _buffLen = delay;  
+            }
             _head = 0;
             _tail = 0;
         }
