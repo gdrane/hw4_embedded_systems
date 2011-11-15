@@ -7,6 +7,7 @@
 #include "Node.h"
 #include "Scheduler.h"
 #include "Edge.h"
+#include "Processor.h"
 
 // LED objects
 DigitalOut led1(LED1);
@@ -30,9 +31,11 @@ int main() {
     t.start();
     // -- parse sdfg file --
     Graph* topology = ReadScheduleConfig();
+    pc.printf("\n\rOutputs\n\r");
     topology->Print();
     // -- schedulability test --
     Scheduler* scheduler = new Scheduler(topology);
+   
     bool scheduled = scheduler->isSchedulable();
     timeElapsed = t.read_ms();
     if(scheduled){
@@ -53,8 +56,16 @@ int main() {
     // -- parse input file --
     int x,k;
     readInput(&x,&k);
-    
+   
+    Processor process(topology, scheduler, k);
+
+    while(x--) {
+        process.SetInBuffer(inBuffer);
+        process.RunProcess();
+    }
+    pc.printf("\n\rDone @ %d\n\r", t.read_ms());
     while(1) {
         // do nothing forever, and be good at it!
     }
 }
+

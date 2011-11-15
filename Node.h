@@ -63,11 +63,34 @@ class ANode : public Node {
 class SNode : public Node {
     public:
         SNode(){
+            _negindex =0;
         }
         virtual int ProcessInputs(int* in) {
-            return in[0]-in[1];
+            if(_negindex)
+                return in[0]-in[1];
+            return in[1] - in[0];
         }      
-        virtual char get_node_id(){return 'S';}  
+        virtual char get_node_id(){return 'S';} 
+        
+        void set_neg_edge(int edgeno) {
+            _neg_edge = edgeno;
+        }
+        
+        bool is_neg_edge(int edgeno) {
+            return edgeno == _neg_edge;
+        }
+        
+       int neg_edge() {
+            return _neg_edge;
+        }
+        
+        void set_negindex() {
+            _negindex = 1;
+        }
+        
+   private:
+        int _neg_edge;
+        int _negindex; 
 };
 
 // Multiplication Node Class

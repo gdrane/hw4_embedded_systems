@@ -15,9 +15,13 @@ class Graph {
             _noofnodes = noofnodes;
             _noofedges = noofedges;
             // make all edges
+            // Dummy Edge that inputs to node 'I'
+            edges[0] = new Edge(0);
             for(int i=1; i<=noofedges; i++){
                 edges[i] = new Edge(i);
             }
+            // Dummy Edge that outputs from node 'O'
+            edges[noofedges+1] = new Edge(noofedges + 1);
         }
         
         ~Graph() {
@@ -35,7 +39,7 @@ class Graph {
         }
 
         void EnterInEdge(int nodeno, int edgeno) {
-            // add the output to this edge
+            // add the input to this edge
             edges[edgeno]->enterInput(nodeno);
         }
         
@@ -84,7 +88,7 @@ class Graph {
              // if we're scheduling, Input node always has inputs
              if(scheduling && getNode(nodeno)->get_node_id() == 'I'){
                 return 1000;
-            }
+             }
             
             // constant nodes always have inputs
             if(getNode(nodeno)->get_node_id() == 'C'){
@@ -109,30 +113,45 @@ class Graph {
         void processNode(int nodeno){
             Node* thisNode = nodes[nodeno];
             // get inputs, accounting for downsamples
-            int inputVals[MAX_DELAY];
+            int inputVals[MAX_DELAY] = { -1 };
             int index = 0;
             
             int N = 1;
             if(thisNode->get_node_id() == 'D')
                 N = ((DNode*)thisNode)->getN();
+            // If this is 'I' node then get a sample from the dummy edge 0
+            if(thisNode->get_node_id() == 'I') {
+                inputVals[index++] = edges[0]->pop();
+            } else {
+            // Else start getting inputs in the normal fashion
             for(int n=0; n<N; n++){
                 for(int e=1; e<=_noofedges; e++){
                     if(edges[e]->getOutput() == nodeno){
-                        inputVals[index++] = edges[e]->pop();
+                        if(thisNode->get_node_id() == 'S' && ((SNode*)thisNode)->is_neg_edge(e)) {
+                            if(index != 0)
+                                ((SNode*)thisNode)->set_negindex();
+                        }
+                        inputVals[index++] =  edges[e]->pop();
                     }
                 }
+            }
             }
             // process and push outputs, accounting for upsamples
             int outVal = thisNode->ProcessInputs(inputVals);
             N = 1;
             if(thisNode->get_node_id() == 'U')
                 N = ((UNode*)thisNode)->getN();
+            // If this is 'O' node then push a sample to the dummy edge noofnodes + 1
+            if(thisNode->get_node_id() == 'O') {
+                edges[_noofedges + 1]->push(outVal);
+            } else {
             for(int n=0; n<N; n++){
                 for(int e=1; e<=_noofedges; e++){
                     if(edges[e]->getInput() == nodeno){
                         edges[e]->push(outVal);
                     }
                 }
+            }
             }
         }
         
@@ -196,3 +215,4 @@ class Graph {
        int _noofedges;
 };
 #endif 
+
