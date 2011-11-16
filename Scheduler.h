@@ -93,10 +93,10 @@ class Scheduler{
                     return false;
                 // if the output can be scheduled, schedule it with highest priority
                 int outputNode = topology->getOutputNode();
-                if(canGo[outputNode]){
+                /*if(canGo[outputNode]){
                     nodeToSchedule = outputNode;
                     numRuns[outputNode] = numRuns[outputNode]+1;
-                }else{
+                }else{*/
                     // schedule the one that has gone the least
                     minRuns = 1000;
                     for(int i=0; i<numNodes; i++){
@@ -112,7 +112,7 @@ class Scheduler{
                             break;
                         }
                     }
-                }
+                //}
 
                 // inputs available on this node and we can push the output. process these inputs
                 topology->processNode(nodeToSchedule);
